@@ -1,0 +1,17 @@
+name: "Custom automatic assignment grader"
+description: "Grade assignment by providing oracle source code"
+
+inputs:
+  time-limit:
+    description: "Maximum execution time allowed in seconds"
+    required: false
+    default: 2
+  memory-limit:
+    description: "Maximum memory usage allowed in MiB"
+    required: false
+    default: 256
+
+outputs:
+
+runs:
+  
