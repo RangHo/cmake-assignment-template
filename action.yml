@@ -26,11 +26,12 @@ runs:
     - name: Build oracle binary
       if: ${{ ! inputs.stdout-file }}
       run: |
+        echo "::debug::$(cmake --version)"
         cmake \
           -D CMAKE_BUILD_TYPE=Release \
           -G "Unix Makefiles" \
-          -B $GITHUB_ACTION_PATH/build \
-          $GITHUB_ACTION_PATH
+          -B ${{ github.action_path }}/build \
+          ${{ github.action_path }}
         make -C ${{ github.action_path }}/build
       shell: bash
 
@@ -38,11 +39,33 @@ runs:
       id: prophecy
       if: ${{ ! inputs.stdout-file }}
       run: |
-        UUID=$(cat /proc/sys/kernel/random/uuid)
-        while IFS= read -r stdin; do
-          echo "$stdin" \
-            | ${{ github.action_path }}/build/assignment ${{ inputs.assignment-id }} \
-            >> ${{ github.workspace }}/$UUID.txt
-        done < ${{ inputs.stdin-file }}
-        echo "stdout-file=${{ github.workspace }}/$UUID.txt" >> $GITHUB_OUTPUT
+        echo "::debug::Standard input file is: $STDIN_FILE"
+        echo "::debug::Standard output file will be: $STDOUT_FILE"
+        echo "::debug::STDIN_FILE has $(wc -l < $STDIN_FILE) lines."
+        ${{ github.action_path }}/build/assignment \
+          ${{ inputs.assignment-id }} \
+          $(wc -l < $STDIN_FILE) \
+          < $STDIN_FILE \
+          > $STDOUT_FILE
+        echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
+      env:
+        STDIN_FILE: ${{ inputs.stdin-file }}
+        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}.txt
       shell: bash
+
+    - name: Build student binary
+      run: |
+        echo "::debug::$(cmake --version)"
+        cmake \
+          -D CMAKE_BUILD_TYPE=Release \
+          -G "Unix Makefiles" \
+          -B ${{ github.workspace }}/build \
+          ${{ github.workspace }}
+        make -C ${{ github.workspace }}/build
+      shell: bash
+        
+
+    - name: Generate student response file
+      id: attempt
+      run: |
+        
