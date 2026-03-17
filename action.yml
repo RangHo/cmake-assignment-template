@@ -25,23 +25,13 @@ runs:
   steps:
     - name: Build oracle binary
       if: ${{ ! inputs.stdout-file }}
-      run: |
-        echo "::debug::$(cmake --version)"
-        cmake \
-          -D CMAKE_BUILD_TYPE=Release \
-          -G "Unix Makefiles" \
-          -B ${{ github.action_path }}/build \
-          ${{ github.action_path }}
-        make -C ${{ github.action_path }}/build
+      run: ./script/build.sh ${{ github.action_path }}
       shell: bash
 
     - name: Generate expected stdout values
       id: prophecy
       if: ${{ ! inputs.stdout-file }}
       run: |
-        echo "::debug::Standard input file is: $STDIN_FILE"
-        echo "::debug::Standard output file will be: $STDOUT_FILE"
-        echo "::debug::STDIN_FILE has $(wc -l < $STDIN_FILE) lines."
         ${{ github.action_path }}/build/assignment \
           ${{ inputs.assignment-id }} \
           $(wc -l < $STDIN_FILE) \
@@ -50,22 +40,38 @@ runs:
         echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
       env:
         STDIN_FILE: ${{ inputs.stdin-file }}
-        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}.txt
+        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-prophecy.txt
       shell: bash
 
-    - name: Build student binary
-      run: |
-        echo "::debug::$(cmake --version)"
-        cmake \
-          -D CMAKE_BUILD_TYPE=Release \
-          -G "Unix Makefiles" \
-          -B ${{ github.workspace }}/build \
-          ${{ github.workspace }}
-        make -C ${{ github.workspace }}/build
+    - name: Build student image
+      run: docker build --tag attempt ${{ github.workspace }}
       shell: bash
         
+    - name: Set up student container
+      run: |
+        docker container create \
+          --name "attempt-container" \
+          --cap-drop ALL \
+          --cpus 1.0 \
+          --entrypoint "" \
+          --interactive \
+          --memory ${{ inputs.memory-limit }} \
+          --memory-swap ${{ inputs.memory-limit }} \
+          --network none \
+          --read-only \
+          --security-opt no-new-privileges
+      shell: bash
 
-    - name: Generate student response file
+    - name: Start student container
       id: attempt
       run: |
-        
+        docker start attempt-container timeout -k 10s ${{ inputs.time-limit }} /app/assignment \
+          ${{ inputs.assignment-id }} \
+          $(wc -l < $STDIN_FILE) \
+          < $STDIN_FILE \
+          > $STDOUT_FILE
+        echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
+      env:
+        STDIN_FILE: ${{ inputs.stdin-file }}
+        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-attempt.txt
+      shell: bash
