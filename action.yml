@@ -1,17 +1,48 @@
-name: "Custom automatic assignment grader"
-description: "Grade assignment by providing oracle source code"
+name: Custom automatic assignment grader
+description: Grade assignment by providing oracle source code
 
 inputs:
+  assignment-id:
+    description: Assignment ID that is passed as the first command line argument
+    required: true
+  stdin-file:
+    description: Path to file containing newline-separated list of inputs that is fed to standard input
+    required: true
+  stdout-file:
+    description: Path to file containing newline-separated list of expected values of standard output
+    required: false
   time-limit:
-    description: "Maximum execution time allowed in seconds"
+    description: Maximum execution time allowed
     required: false
-    default: 2
+    default: 2s
   memory-limit:
-    description: "Maximum memory usage allowed in MiB"
+    description: Maximum memory usage allowed
     required: false
-    default: 256
-
-outputs:
+    default: 256m
 
 runs:
-  
+  using: composite
+  steps:
+    - name: Build oracle binary
+      if: ${{ ! inputs.stdout-file }}
+      run: |
+        cmake \
+          -D CMAKE_BUILD_TYPE=Release \
+          -G "Unix Makefiles" \
+          -B $GITHUB_ACTION_PATH/build \
+          $GITHUB_ACTION_PATH
+        make -C ${{ github.action_path }}/build
+      shell: bash
+
+    - name: Generate expected stdout values
+      id: prophecy
+      if: ${{ ! inputs.stdout-file }}
+      run: |
+        UUID=$(cat /proc/sys/kernel/random/uuid)
+        while IFS= read -r stdin; do
+          echo "$stdin" \
+            | ${{ github.action_path }}/build/assignment ${{ inputs.assignment-id }} \
+            >> ${{ github.workspace }}/$UUID.txt
+        done < ${{ inputs.stdin-file }}
+        echo "stdout-file=${{ github.workspace }}/$UUID.txt" >> $GITHUB_OUTPUT
+      shell: bash
