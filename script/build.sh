@@ -17,4 +17,4 @@ fi
 # Build the project using CMake.
 BUILD_DIR="$WORKSPACE/build"
 cmake -S "$WORKSPACE" -B "$BUILD_DIR"
-cmake --build "$BUILD_DIR" --config Release
+cmake --build "$BUILD_DIR" --clean-first --config Release
