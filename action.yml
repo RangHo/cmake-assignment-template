@@ -2,8 +2,8 @@ name: Custom automatic assignment grader
 description: Grade assignment by providing oracle source code
 
 inputs:
-  assignment-id:
-    description: Assignment ID that is passed as the first command line argument
+  question-id:
+    description: Question ID that is passed as the first command line argument
     required: true
   stdin-file:
     description: Path to file containing newline-separated list of inputs that is fed to standard input
@@ -33,10 +33,10 @@ runs:
       if: ${{ ! inputs.stdout-file }}
       run: |
         ${{ github.action_path }}/build/assignment \
-          ${{ inputs.assignment-id }} \
-          $(wc -l < $STDIN_FILE) \
-          < $STDIN_FILE \
-          > $STDOUT_FILE
+          ${{ inputs.question-id }} \
+          $(wc -l <$STDIN_FILE) \
+          <$STDIN_FILE \
+          >$STDOUT_FILE
         echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
       env:
         STDIN_FILE: ${{ inputs.stdin-file }}
@@ -44,34 +44,48 @@ runs:
       shell: bash
 
     - name: Build student image
-      run: docker build --tag attempt ${{ github.workspace }}
+      run: |
+        docker build \
+          --build-arg TIME_LIMIT=${{ inputs.time-limit }}
+          --tag attempt \
+          ${{ github.workspace }}
       shell: bash
         
-    - name: Set up student container
+    - name: Run student container
+      id: attempt
       run: |
-        docker container create \
+        docker run \
           --name "attempt-container" \
           --cap-drop ALL \
           --cpus 1.0 \
-          --entrypoint "" \
           --interactive \
           --memory ${{ inputs.memory-limit }} \
           --memory-swap ${{ inputs.memory-limit }} \
           --network none \
           --read-only \
-          --security-opt no-new-privileges
-      shell: bash
-
-    - name: Start student container
-      id: attempt
-      run: |
-        docker start attempt-container timeout -k 10s ${{ inputs.time-limit }} /app/assignment \
-          ${{ inputs.assignment-id }} \
-          $(wc -l < $STDIN_FILE) \
-          < $STDIN_FILE \
-          > $STDOUT_FILE
+          --security-opt no-new-privileges \
+          attempt:latest \
+          ${{ inputs.question-id }} \
+          $(wc -l <$STDIN_FILE) \
+          <$STDIN_FILE \
+          >$STDOUT_FILE
         echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
       env:
         STDIN_FILE: ${{ inputs.stdin-file }}
         STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-attempt.txt
       shell: bash
+
+    - name: Check student container status
+      id: attempt-status
+      run: |
+        if docker inspect attempt-container >/dev/null 2>&1; then
+          printf "out-of-memory=%s\n" $(docker inspect -f '{{ .State.OOMKilled }}' attempt-container) >> $GITHUB_OUTPUT
+          printf "exit-code=%s\n" $(docker inspect -f '{{ .State.ExitCode }}' attempt-container) >> $GITHUB_OUTPUT
+        fi
+        docker rm -f attempt-container >/dev/null 2>&1 || true
+      shell: bash
+
+    - name: Print container status
+      run: |
+        echo "::notice::oom? ${{ steps.attempt-status.outputs.out-of-memory }}"
+        echo "::notice::exitcode? ${{ steps.attempt-status.outputs.exit-code }}"

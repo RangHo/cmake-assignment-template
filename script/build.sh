@@ -9,7 +9,7 @@ if [ -z "$WORKSPACE" ]; then
 fi
 
 # Check if CMake is installed.
-if ! command -v cmake &> /dev/null; then
+if ! command -v cmake >/dev/null 2>&1; then
   echo "CMake is not installed. Please install CMake to build the project."
   exit 1
 fi
