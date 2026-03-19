@@ -46,7 +46,7 @@ runs:
     - name: Build student image
       run: |
         docker build \
-          --build-arg TIME_LIMIT=${{ inputs.time-limit }}
+          --build-arg TIME_LIMIT=${{ inputs.time-limit }} \
           --tag attempt \
           ${{ github.workspace }}
       shell: bash
