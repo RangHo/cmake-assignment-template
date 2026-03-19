@@ -12,3 +12,6 @@ jobs:
 
       - name: Run automatic grader
         uses: ./
+        with:
+          question-id: 1
+          stdin-file: ./example/01-input.txt

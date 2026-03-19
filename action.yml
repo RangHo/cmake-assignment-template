@@ -89,3 +89,4 @@ runs:
       run: |
         echo "::notice::oom? ${{ steps.attempt-status.outputs.out-of-memory }}"
         echo "::notice::exitcode? ${{ steps.attempt-status.outputs.exit-code }}"
+      shell: bash
