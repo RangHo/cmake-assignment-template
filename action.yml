@@ -20,13 +20,6 @@ inputs:
     required: false
     default: 256m
 
-outputs:
-  correct-cases:
-    description: Number of correct outputs
-    value: ${{ steps.}}
-  total-cases:
-    description: Number of all cases tested
-
 runs:
   using: composite
   steps:
