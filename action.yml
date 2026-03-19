@@ -43,6 +43,11 @@ runs:
         STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-prophecy.txt
       shell: bash
 
+    - name: Clean build artifacts
+      if: ${{ ! inputs.stdout-file }}
+      run: rm -rf ${{ github.action_path }}/build
+      shell: bash
+
     - name: Build student image
       run: |
         docker build \
