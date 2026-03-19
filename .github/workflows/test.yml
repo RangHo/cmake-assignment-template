@@ -10,8 +10,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Run automatic grader
+      - name: Grade with existing input/output
         uses: ./
         with:
           question-id: 1
           stdin-file: ./example/01-input.txt
+          stdout-file: ./example/01-output.txt
+
+      - name: Grade with existing input and generated output
+        uses: ./
+        with:
+          question-id: 1
+          stdin-file: ./example/02-input.txt

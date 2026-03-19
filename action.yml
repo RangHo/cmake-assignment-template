@@ -20,32 +20,39 @@ inputs:
     required: false
     default: 256m
 
+outputs:
+  correct-cases:
+    description: Number of correct outputs
+    value: ${{ steps.}}
+  total-cases:
+    description: Number of all cases tested
+
 runs:
   using: composite
   steps:
-    - name: Build oracle binary
-      if: ${{ ! inputs.stdout-file }}
-      run: ./script/build.sh ${{ github.action_path }}
+    - name: Format input and output file names
+      id: path
+      run: |
+        echo "i=${{ inputs.stdin-file }}" >> $GITHUB_OUTPUT
+        echo "p=${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-prophecy.txt" >> $GITHUB_OUTPUT
+        echo "a=${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-attempt.txt" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: Generate expected stdout values
-      id: prophecy
+    - name: Generate prophecy values from oracle code
       if: ${{ ! inputs.stdout-file }}
       run: |
+        ./script/build.sh ${{ github.action_path }}
         ${{ github.action_path }}/build/assignment \
           ${{ inputs.question-id }} \
-          $(wc -l <$STDIN_FILE) \
-          <$STDIN_FILE \
-          >$STDOUT_FILE
-        echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
-      env:
-        STDIN_FILE: ${{ inputs.stdin-file }}
-        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-prophecy.txt
+          $(wc -l <${{ steps.path.outputs.i }}) \
+          <${{ steps.path.outputs.i }} \
+          >${{ steps.path.outputs.p }}
+        ./script/clean.sh ${{ github.action_path }}
       shell: bash
 
-    - name: Clean build artifacts
-      if: ${{ ! inputs.stdout-file }}
-      run: rm -rf ${{ github.action_path }}/build
+    - name: Copy prophecy file
+      if: ${{ inputs.stdout-file }}
+      run: cp ${{ inputs.stdout-file }} ${{ steps.path.outputs.p }}
       shell: bash
 
     - name: Build student image
@@ -57,7 +64,6 @@ runs:
       shell: bash
         
     - name: Run student container
-      id: attempt
       run: |
         docker run \
           --name "attempt-container" \
@@ -71,17 +77,13 @@ runs:
           --security-opt no-new-privileges \
           attempt:latest \
           ${{ inputs.question-id }} \
-          $(wc -l <$STDIN_FILE) \
-          <$STDIN_FILE \
-          >$STDOUT_FILE
-        echo "stdout-file=$STDOUT_FILE" >> $GITHUB_OUTPUT
-      env:
-        STDIN_FILE: ${{ inputs.stdin-file }}
-        STDOUT_FILE: ${{ github.workspace }}/${{ hashFiles(inputs.stdin-file) }}-attempt.txt
+          $(wc -l <${{ steps.path.outputs.i }}) \
+          <${{ steps.path.outputs.i }} \
+          >${{ steps.path.outputs.a }}
       shell: bash
 
     - name: Check student container status
-      id: attempt-status
+      id: status
       run: |
         if docker inspect attempt-container >/dev/null 2>&1; then
           printf "out-of-memory=%s\n" $(docker inspect -f '{{ .State.OOMKilled }}' attempt-container) >> $GITHUB_OUTPUT
@@ -92,6 +94,6 @@ runs:
 
     - name: Print container status
       run: |
-        echo "::notice::oom? ${{ steps.attempt-status.outputs.out-of-memory }}"
-        echo "::notice::exitcode? ${{ steps.attempt-status.outputs.exit-code }}"
+        echo "::notice::oom? ${{ steps.status.outputs.out-of-memory }}"
+        echo "::notice::exitcode? ${{ steps.status.outputs.exit-code }}"
       shell: bash
