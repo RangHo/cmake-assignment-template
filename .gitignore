@@ -1,0 +1,41 @@
+# Compiled artifacts.
+*.slo
+*.lo
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.so.*
+*.lai
+*.la
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# Debugger files.
+*.pdb
+
+# Build directories.
+build/
+Build/
+build-*/
+
+# CMake generated files.
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+
+# LaTeX source and auxiliary files.
+*.tex
+*.aux
+*.log
+
+# Local environment configurations.
+.dir-locals-2.el
+mise.local.toml
