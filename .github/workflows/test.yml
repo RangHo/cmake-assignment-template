@@ -1,6 +1,9 @@
-name: Test this action
+name: Test the grader action
 
-on: push
+on:
+  push:
+    paths:
+      - action.yml
 
 jobs:
   test:
@@ -11,14 +14,24 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Grade with existing input/output
+        id: apocalypse
         uses: ./
         with:
           question-id: 1
           stdin-file: ./example/01-input.txt
           stdout-file: ./example/01-output.txt
 
+      - name: Check the result
+        run: |
+          echo "::notice title=APOCALYPSE::${{ steps.apocalypse.outputs.total-points}}/${{ steps.apocalypse.outputs.max-points }}"
+
       - name: Grade with existing input and generated output
+        id: prophecy
         uses: ./
         with:
           question-id: 1
           stdin-file: ./example/02-input.txt
+
+      - name: Check the result
+        run: |
+          echo "::notice title=PROPHECY::${{ steps.prophecy.outputs.total-points}}/${{ steps.prophecy.outputs.max-points }}"

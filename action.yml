@@ -1,4 +1,4 @@
-name: Custom automatic assignment grader
+name: Grade assignment
 description: Grade assignment by providing oracle source code
 
 inputs:
@@ -19,6 +19,20 @@ inputs:
     description: Maximum memory usage allowed
     required: false
     default: 256m
+
+outputs:
+  total-points:
+    description: Number of correct testcases produced
+    value: ${{ steps.result.outputs.total-points }}
+  max-points:
+    description: Number of all testcases tested
+    value: ${{ steps.result.outputs.max-points }}
+  time-out:
+    description: Was the maximum time limit reached?
+    value: ${{ steps.result.outputs.time-out }}
+  out-of-memory:
+    description: Was the maximum memory limit reached?
+    value: ${{ steps.status.outputs.out-of-memory }}
 
 runs:
   using: composite
@@ -85,8 +99,19 @@ runs:
         docker rm -f attempt-container >/dev/null 2>&1 || true
       shell: bash
 
-    - name: Print container status
+    - name: Compare the attempt with prophecy
+      id: result
       run: |
-        echo "::notice::oom? ${{ steps.status.outputs.out-of-memory }}"
-        echo "::notice::exitcode? ${{ steps.status.outputs.exit-code }}"
+        MAX_POINTS=$(wc -l <${{ steps.path.outputs.p }})
+        echo "max-points=$MAX_POINTS" >> $GITHUB_OUTPUT
+        if [ "${{ steps.outputs.status.exit-code }}" = 0 ]; then
+          WRONG=$(diff --side-by-side --suppress-common-lines ${{ steps.path.outputs.p }} ${{ steps.path.outputs.a }} | wc -l)
+          echo "time-out=false" >> $GITHUB_OUTPUT
+          printf "total-points=%s\n" $(( MAX_POINTS - WRONG )) >> $GITHUB_OUTPUT
+        else
+          if [ "${{steps.status.outputs.exit-code }}" = 124 ]; then
+            echo "time-out=true" >> $GITHUB_OUTPUT
+          fi
+          echo "total-points=0" >> $GITHUB_OUTPUT
+        fi
       shell: bash
