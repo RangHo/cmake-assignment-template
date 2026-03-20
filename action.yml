@@ -104,14 +104,15 @@ runs:
       run: |
         MAX_POINTS=$(wc -l <${{ steps.path.outputs.p }})
         echo "max-points=$MAX_POINTS" >> $GITHUB_OUTPUT
-        if [ "${{ steps.outputs.status.exit-code }}" = 0 ]; then
-          WRONG=$(diff --side-by-side --suppress-common-lines ${{ steps.path.outputs.p }} ${{ steps.path.outputs.a }} | wc -l)
+        if [ "${{steps.status.outputs.exit-code }}" = 124 ]; then
+          echo "time-out=true" >> $GITHUB_OUTPUT
+        else
           echo "time-out=false" >> $GITHUB_OUTPUT
+        fi
+        if [ -e ${{ steps.path.outputs.a }} ]; then
+          WRONG=$(diff --side-by-side --suppress-common-lines ${{ steps.path.outputs.p }} ${{ steps.path.outputs.a }} | wc -l)
           printf "total-points=%s\n" $(( MAX_POINTS - WRONG )) >> $GITHUB_OUTPUT
         else
-          if [ "${{steps.status.outputs.exit-code }}" = 124 ]; then
-            echo "time-out=true" >> $GITHUB_OUTPUT
-          fi
           echo "total-points=0" >> $GITHUB_OUTPUT
         fi
       shell: bash
