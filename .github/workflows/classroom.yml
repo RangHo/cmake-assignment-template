@@ -7,9 +7,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  # TODO: run testcases in separate jobs
+
+  apocalypse:
+    runs-on: ubuntu-latest
+    outputs:
+      total-points: ${{ steps.grader.outputs.total-points }}
+      max-points: ${{ steps.grader.outputs.max-points }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Grade with existing input/output
+        id: grader
+        uses: ./ # TODO: replace this with the grading action
+        with:
+          question-id: 1
+          stdin-file: ./example/01-input.txt
+          stdout-file: ./example/01-output.txt
+
+  prophecy:
+    runs-on: ubuntu-latest
+    outputs:
+      total-points: ${{ steps.grader.outputs.total-points }}
+      max-points: ${{ steps.grader.outputs.max-points }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Grade with existing input and generated output
+        id: grader
+        uses: ./ # TODO: replace this with the grading action
+        with:
+          question-id: 1
+          stdin-file: ./example/02-input.txt
+
   grade:
     runs-on: ubuntu-latest
     if: github.actor != 'github-classroom[bot]'
+    needs: # TODO: add grader jobs as dependency
+      - apocalypse
+      - prophecy
 
     steps:
       - name: Checkout repository
@@ -23,13 +63,6 @@ jobs:
           stdin-file: ./example/01-input.txt
           stdout-file: ./example/01-output.txt
 
-      - name: Grade with existing input and generated output
-        id: prophecy
-        uses: ./ # TODO: replace this with the grading action
-        with:
-          question-id: 1
-          stdin-file: ./example/02-input.txt
-
       - name: Combine all grading results
         id: result
         run: |
@@ -38,10 +71,10 @@ jobs:
           echo "total-points=$TOTAL_POINTS" >> $GITHUB_OUTPUT
           echo "max-points=$MAX_POINTS" >> $GITHUB_OUTPUT
         env:
-          APOCALYPSE_TOTAL_POINTS: ${{ steps.apocalypse.outputs.total-points }}
-          APOCALYPSE_MAX_POINTS: ${{ steps.apocalypse.outputs.max-points }}
-          PROPHECY_TOTAL_POINTS: ${{ steps.prophecy.outputs.total-points }}
-          PROPHECY_MAX_POINTS: ${{ steps.prophecy.outputs.max-points }}
+          APOCALYPSE_TOTAL_POINTS: ${{ needs.apocalypse.outputs.total-points }}
+          APOCALYPSE_MAX_POINTS: ${{ needs.apocalypse.outputs.max-points }}
+          PROPHECY_TOTAL_POINTS: ${{ needs.prophecy.outputs.total-points }}
+          PROPHECY_MAX_POINTS: ${{ needs.prophecy.outputs.max-points }}
 
       - name: Notify classroom
         uses: ./.github/actions/notify-classroom
