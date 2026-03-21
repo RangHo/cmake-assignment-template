@@ -1,0 +1,49 @@
+name: Automatically grade the submission
+
+on:
+  push:
+    paths:
+      - src/*
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Grade with existing input/output
+        id: apocalypse
+        uses: ./ # TODO: replace this with the grading action
+        with:
+          question-id: 1
+          stdin-file: ./example/01-input.txt
+          stdout-file: ./example/01-output.txt
+
+      - name: Grade with existing input and generated output
+        id: prophecy
+        uses: ./ # TODO: replace this with the grading action
+        with:
+          question-id: 1
+          stdin-file: ./example/02-input.txt
+
+      - name: Combine all grading results
+        id: result
+        run: |
+          TOTAL_POINTS=$(( APOCALYPSE_TOTAL_POINTS + PROPHECY_TOTAL_POINTS ))
+          MAX_POINTS=$(( APOCALYPSE_MAX_POINTS + PROPHECY_TOTAL_POINTS ))
+          echo "total-points=$TOTAL_POINTS" >> $GITHUB_OUTPUT
+          echo "max-points=$MAX_POINTS" >> $GITHUB_OUTPUT
+        env:
+          APOCALYPSE_TOTAL_POINTS: ${{ steps.apocalypse.outputs.total-points }}
+          APOCALYPSE_MAX_POINTS: ${{ steps.apocalypse.outputs.max-points }}
+          PROPHECY_TOTAL_POINTS: ${{ steps.prophecy.outputs.total-points }}
+          PROPHECY_MAX_POINTS: ${{ steps.prophecy.outputs.max-points }}
+
+      - name: Notify classroom
+        uses: ./.github/actions/notify-classroom
+        with:
+          total-points: ${{ steps.result.outputs.total-points }}
+          max-points: ${{ steps.result.outputs.max-points }}

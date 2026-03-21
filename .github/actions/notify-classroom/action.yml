@@ -1,0 +1,17 @@
+name: Notify GitHub Classroom
+description: Notify the points to GitHub Classroom
+
+inputs:
+  total-points:
+    description: Total points that student got
+    required: true
+  max-points:
+    description: Maximum amount of points that student can get
+    required: true
+
+runs:
+  using: composite
+  - name: Report points
+    run: |
+      echo "::notice title=Autograding complete::Points ${{ inputs.total-points }}/${{ inputs.max-points }}"
+      echo "::notice title=Autograding report::{ \"totalPoints\": ${{ inputs.total-points }}, \"maxPoints\": ${{ inputs.max-points }} }"
