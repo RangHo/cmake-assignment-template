@@ -55,14 +55,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Grade with existing input/output
-        id: apocalypse
-        uses: ./ # TODO: replace this with the grading action
-        with:
-          question-id: 1
-          stdin-file: ./example/01-input.txt
-          stdout-file: ./example/01-output.txt
-
       - name: Combine all grading results
         id: result
         run: |
