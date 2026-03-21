@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - action.yml
+  workflow_dispatch:
 
 jobs:
   test:
