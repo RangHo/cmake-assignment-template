@@ -1,10 +1,9 @@
 name: Automatically grade the submission
 
 on:
-  push:
-    paths:
-      - src/*
-  workflow_dispatch:
+  - push
+  - repository_dispatch
+  - workflow_dispatch
 
 jobs:
   # TODO: run testcases in separate jobs
