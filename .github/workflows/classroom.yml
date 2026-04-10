@@ -59,7 +59,7 @@ jobs:
         id: result
         run: |
           TOTAL_POINTS=$(( APOCALYPSE_TOTAL_POINTS + PROPHECY_TOTAL_POINTS ))
-          MAX_POINTS=$(( APOCALYPSE_MAX_POINTS + PROPHECY_TOTAL_POINTS ))
+          MAX_POINTS=$(( APOCALYPSE_MAX_POINTS + PROPHECY_MAX_POINTS ))
           echo "total-points=$TOTAL_POINTS" >> $GITHUB_OUTPUT
           echo "max-points=$MAX_POINTS" >> $GITHUB_OUTPUT
         env:
