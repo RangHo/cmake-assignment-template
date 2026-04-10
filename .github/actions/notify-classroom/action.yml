@@ -15,5 +15,5 @@ runs:
     - name: Report points
       run: |
         echo "::notice title=Autograding complete::Points ${{ inputs.total-points }}/${{ inputs.max-points }}"
-        echo "::notice title=Autograding report::{ \"totalPoints\": ${{ inputs.total-points }}, \"maxPoints\": ${{ inputs.max-points }} }"
+        echo "::notice title=Autograding report::{\"totalPoints\":${{ inputs.total-points }},\"maxPoints\":${{ inputs.max-points }}}"
       shell: bash
